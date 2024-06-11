@@ -1,0 +1,374 @@
+---
+title: "Best coding practices"
+author: "Noora Sissala"
+date: "2024-06-10"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# 1 Coding style
+
+## 1.1 Valid variable names
+
+Which of the following are valid/good variable names in R? What is wrong
+with the ones that are invalid/bad?
+
+-   var1
+
+-   3way_handshake
+
+-   .password
+
+-   **test**
+
+-   my-matrix-M
+
+-   three.dimensional.array
+
+-   3D.distance
+
+-   .2objects
+
+-   wz3gei92
+
+-   next
+
+-   P
+
+-   Q
+
+-   R
+
+-   S
+
+-   T
+
+-   X
+
+-   is.larger?
+
+## 1.2 Obscure code
+
+```{r}
+
+# The code below works, but can be improved. Do improve it!
+myIterAtoR.max <- 5
+second_iterator.max<-7
+col.NUM= 10
+row.cnt =10
+fwzy45 <- matrix(rep(1, col.NUM*row.cnt),nrow=row.cnt)
+for(haystack in (2-1):col.NUM){
+  for(needle in 1:row.cnt) {
+if(haystack>=myIterAtoR.max){
+fwzy45[haystack, needle]<-NA}
+}}
+
+```
+
+```{r}
+
+# Improved code
+my_iterator_max <- 5
+second_iterator_max <- 7
+col_num <- 10
+row_num <- 10
+mat <- matrix(rep(1, col_num*row_num), nrow=row_num)
+for(i in 1:col_num){
+  for(j in 1:row_num) {
+    if(i >= my_iterator_max){
+      mat[i, j] <- NA
+    }
+  }
+}
+
+
+```
+
+## 1.3 Better formatting
+
+```{r}
+
+# Improve style and formatting of the following code:
+simulate_genotype <- function( q, N=100 ) {
+  if( length(q)==1 ){
+    p <- (1 - q)
+    f_gt <- c(p^2, 2*p*q, q^2) # AA, AB, BB
+  }else{
+    f_gt<-q
+  }
+  tmp <- sample( c('AA','AB','BB'), size =N, prob=f_gt, replace=T )
+  return(tmp)
+}
+
+```
+
+```{r}
+
+# Improved code
+simulate_genotype <- function(q, N = 100) {
+  if(length(q) == 1) {
+    p <- (1 - q)
+    f_gt <- c(p^2, (2 * p * q), q^2) # AA, AB, BB
+  } else {
+    f_gt <- q
+  }
+  tmp <- sample(c('AA', 'AB', 'BB'), 
+                size = N, 
+                prob = f_gt, 
+                replace = TRUE)
+  return(tmp)
+}
+
+
+```
+
+## 1.4 Hidden variable
+
+```{r}
+
+# ssign a vector of three last months (abbreviated in English) in a year to a hidden variable my_months
+.my_months <- rev(rev(month.abb)[1:3])
+
+```
+
+## 1.5 Pipeline-friendly functions
+
+```{r}
+
+# Modify the function below so that it works with R pipes
+my_filter <- function(threshold = 1, x, scalar = 5) {
+  x[x >= threshold] <- NA 
+  x <- x * scalar
+  return(x)
+}
+
+```
+
+```{r}
+
+# Modified function
+my_filter <- function(x, threshold = 1, scalar = 5) {
+  x[x >= threshold] <- NA 
+  x * scalar
+}
+
+# Test:
+c(-5, 5) %>% my_filter()
+
+```
+
+## 1.6 Untidy code
+
+```{r}
+
+# Is the code below correct? Can it be improved?
+simulate_phenotype <- function(pop_params, gp_map, gtype) {
+  pop_mean <- pop_params[1]
+  pop_var <- pop_params[2]
+  pheno <- rnorm(n = N, mean = pop_mean, sd = sqrt(pop_var))
+  effect <- rep(0, times = length(N))
+  for (gt_iter in c('AA', 'AB', 'BB')) {
+    effect[gtype == gt_iter] <- rnorm(n = sum(gtype == gt_iter), 
+                                      mean = gp_map[gt_iter, 'mean_eff'], 
+                                      sd = sqrt(gp_map[gt_iter, 'var_eff']))
+  }
+  dat <- data.frame(gt = gtype, raw_pheno = pheno, effect = effect, pheno = pheno + effect)
+  return(dat)
+}
+
+# N is not initialized anywhere 
+
+```
+
+# 2 Structuring code
+
+## 2.1 Computing variance
+
+Write a modular code (function or functions) that computes the sample
+standard deviation given a vector of numbers. Decide how to logically
+structure the code. Assume there are no built-in R functions for
+computing mean and variance available.
+
+```{r}
+
+my_var <- function(x) {
+  m <- my_mean(x)
+  sd <- my_sd(x, m)
+  sd^2
+}
+
+my_sd <- function(x, m) {
+  sqrt(sum((x-m)^2)/(length(x)-1))
+}
+
+my_mean <- function(x) {
+  sum(x)/length(x)
+}
+
+my_var(c(1,2,3,4,5,6))
+
+```
+
+## 2.2 Writing a wrapper function
+
+You found two functions in two different packages: the randomSampleInt
+function that generates a random sample of integer numbers and the
+randomSampleLetter function for generating a random sample of letters.
+Unfortunately, the functions are called in different ways which you want
+to unify in order to use them interchangeably in your code. Write a
+wrapper function around the randomSampleLetter that will provide the
+same interface to the function as the randomSampleInt. Also, the
+randomSampleLetter cannot handle the seed. Can you add this feature to
+your wrapper?
+
+```{r}
+
+# Original functions
+randomSampleInt <- function(x, verbose, length, seed = 42) {
+  if (verbose) {
+    print(paste0('Generating random sample of ', length, ' integers using seed ', seed))
+  }
+  set.seed(seed)
+  sampleInt <- sample(x = x, size = length, replace = TRUE)
+  return(sampleInt)
+} 
+
+randomSampleLetter <- function(N, silent=T, lett) {
+  if (!silent) {
+    print(paste0('Generating random sample of ', N, ' letters.'))
+  }
+  sample <- sample(x = lett, size = N, replace = TRUE)
+  return(sample)
+}
+
+```
+
+```{r}
+
+# Wrapper function for randomSampleLetter
+randomSampleLetterWrapper <- function(x, verbose, length, seed = 42) {
+  set.seed(seed)
+  randomSampleLetter(N = length, silent = !verbose, lett = x)
+}
+
+
+```
+
+```{r}
+
+# Test
+
+## Original function
+set.seed(42)
+randomSampleLetter(LETTERS, silent = FALSE, N = 5)
+
+## Wrapper function
+randomSampleLetterWrapper(LETTERS, verbose = TRUE, length = 5, seed = 42)
+
+```
+
+## 2.3 Customizing plot
+
+Write a wrapper around the graphics::plot function that modifies its
+default behavior so that it plots red crosses instead of black points.
+Do it in a way that enables the user to modify other function arguments.
+
+```{r}
+
+# Wrappwr function for plot
+my_plot <- function(x, col = 'red', pch = 4, ...) {
+  
+  plot(x = x, col = col, pch = pch, ...)
+  
+}
+
+```
+
+```{r}
+
+# Test
+## Default function
+plot(iris$Sepal.Length, xlab = 'Sepal length', ylab = 'Sepal width')
+
+## Wrapper function
+my_plot(iris$Sepal.Length, xlab = 'Sepal length', ylab = 'Sepal width')
+
+```
+
+## 2.4 Bonus task: Adding Arguments to a Function
+
+What if you want to pass some additional parameters to a function and,
+sadly, the authors forgot to add ... to the list of function arguments.
+There is a way out – you can bind extra arguments supplied as alist
+structure to the original function arguments retrieved by formals. Try
+to fix the function below, so that the call red_plot(1, 1, col = 'red',
+pch = 19) will result in points being represented by red circles. Do use
+alist and formals and do not edit the red_plot itself!
+
+**alist:** alist handles its arguments as if they described function
+arguments. So the values are not evaluated, and tagged arguments with no
+value are allowed whereas list simply ignores them. alist is most often
+used in conjunction with formals.
+
+**formals:** Get or set the formal arguments of a function.
+
+-   formals(fun = sys.function(sys.parent()), envir = parent.frame())
+
+-   formals(fun, envir = environment(fun)) \<- value
+
+-   For the first form, fun can also be a character string naming the
+    function to be manipulated, which is searched for in envir, by
+    default from the parent frame. If it is not specified, the function
+    calling formals is used.
+
+```{r}
+
+# Original function
+red_plot <- function(x, y) { 
+  plot(x, y, las=1, cex.axis=.8, ...)
+}
+
+# Test
+
+red_plot(1, 1, col = 'red', pch = 19) # Does not work
+
+```
+
+```{r}
+
+# Modify function
+formals(red_plot) <- c(formals(red_plot), alist(... = ))
+
+# Test
+red_plot(1, 1, col = 'red', pch = 19)
+
+
+```
+
+## 2.5 Bonus task: Using options
+
+Use options to change the default prompt in R to hello :-) >.
+
+```{r}
+
+# Check which options are available
+head(.Options)
+
+```
+```{r}
+
+options(prompt = 'hello :-) >')
+
+```
+
+
+```{r}
+
+# Change back to default
+options(prompt = "> ")
+
+```
+
+

@@ -1,0 +1,442 @@
+---
+title: "Debugging, Profiling, and Optimizing"
+author: "Noora Sissala"
+date: "10-06-2024"
+format: html
+  html: 
+    title-block-banner: true
+    smooth-scroll: true
+    toc: true
+    toc-depth: 4
+    toc-location: right
+    number-sections: true
+    number.depth: 4
+    code-fold: true
+    code-tools: true
+    code-copy: true
+    code-overflow: wrap
+    df-print: kable
+    standalone: false
+    fig-align: center
+---
+
+## 1 Debugging
+
+### Option 1: Dumping frames
+
+```{r}
+
+f <- function(x) {
+  sin(x)
+}
+
+options(error = quote(dump.frames(dumpto = 'testdump', to.file = TRUE)))
+f('x')
+options(error = NULL) # reset behavior
+load('testdump.rda')
+debugger(testdump)
+
+
+```
+
+### Option 2: Traceback
+
+```{r}
+
+f <- function(x) {
+  sin(x)
+}
+
+f('x')
+
+```
+
+```{r}
+
+traceback()
+
+```
+
+### Option 3: Debug line-by-line
+
+```{r}
+
+debug(f)
+f('x')
+undebug(f)
+
+```
+
+```{r}
+
+debugonce(f)
+f('x')
+
+```
+
+### 1.1 Task: Code correctness
+
+Which of the following chunks of code are correct and which contain errors? Identify these errors.
+
+**Chunk 1:**
+
+```{r}
+
+input <- sample(1:1000, size = 1000, replace = T)
+currmin <- NULL
+for (i in input) {
+  if (input > currmin) {
+    currmin <- input
+    print(paste0("The new minimum is: ", currmin))
+  }
+}
+
+```
+
+Error: Should be i \> currmin in the if statement, currmin should be updated to i, not input, and currmin needs to have a value other than NULL from the start. Logical error: if statement should be i \< currmin, not i \> currmin.
+
+```{r}
+
+input <- sample(1:1000, size = 1000, replace = T)
+currmin <- 1000
+for (i in input) {
+  if (i < currmin) {
+    currmin <- i
+    print(paste0("The new minimum is: ", currmin))
+  }
+}
+
+```
+
+**Chunk 2:**
+
+```{r}
+
+input <- sample(1:1000, size = 1000, replac = T)
+currmin <- NULL
+for (i in input) {
+  if (input < currmin) {
+    currmin <- input
+    print(paste0("The new minimum is: ", currmin))
+  }
+}
+
+```
+
+Error: Spelling mistake in replac instead of replace. If statement should be i \< currmin, not input \< currmin. currmin should be updated to i, not input, and currmin needs to have a value other than NULL from the start.
+
+```{r}
+
+input <- sample(1:1000, size = 1000, replace = T)
+currmin <- 0
+for (i in input) {
+  if (i < currmin) {
+    currmin <- i
+    print(paste0("The new minimum is: ", currmin))
+  }
+}
+
+```
+
+**Chunk 3:**
+
+```{r}
+
+for (cnt in 1:20) {
+  if (cnt > 12) {
+    print("12+")
+  } else {
+    print("Not 12+")
+  }
+}
+
+```
+
+Error: If statement should be cnt \>= 12, not cnt \> 12.
+
+```{r}
+
+for (cnt in 1:20) {
+  if (cnt >= 12) {
+    print("12+")
+  } else {
+    print("Not 12+")
+  }
+}
+
+```
+
+**Chunk 4:**
+
+```{r}
+
+result <- logical(10)
+input <- sample(1:10, size = 10, replace = T)
+for (i in 0:length(input)) {
+  if (input[i] >= 5) {
+    result[i] <- TRUE
+  }
+}
+
+```
+
+Error: Indexing should start from 1, not 0.
+
+```{r}
+
+result <- logical(10)
+input <- sample(1:10, size = 10, replace = T)
+for (i in 1:length(input)) {
+  if (input[i] >= 5) {
+    result[i] <- TRUE
+  }
+}
+
+result
+```
+
+### 1.2 Task: Debugger
+
+Play with debugger as described in lecture slides.
+
+```{r}
+
+f <- function(x) {
+  sin(x)
+}
+
+options(error = quote(dump.frames(dumpto = 'testdump', to.file = TRUE)))
+f('x')
+options(error = NULL) # reset behavior
+load('testdump.rda')
+debugger(testdump)
+
+```
+
+### 1.3 Task: Floating-point arithmetics
+
+Can you fix the code below so that it produces more reliable result?
+
+```{r}
+
+vec <- seq(0.1, 0.9, by=0.1)
+vec == 0.7
+
+```
+
+Machine specifications:
+
+```{r}
+
+unlist(.Machine)
+
+```
+
+```{r}
+
+# Make a custom function that uses machines' epsilon for comparing
+# values
+is_equal <- function(x, y) {
+  isEqual <- F
+  if (abs(x - y) < unlist(.Machine)['double.eps']) {
+    isEqual <- T
+  }
+  isEqual
+}
+
+# Some tests
+0.7 == 0.6 + 0.1
+is_equal(0.7, 0.6 + 0.1)
+0.7 == 0.8 - 0.1
+is_equal(0.7, 0.8 - 0.1)
+
+# Use is_equal to fix the code
+vec <- seq(0.1, 0.9, by=0.1)
+is_equal(vec[7], 0.7)
+
+
+```
+
+## 2 Profiling
+
+### 2.1 Task: Filling a large matrix
+
+Create a 10 000 x 10 000 matrix and fill it with random numbers (from 1 to 42), first row by row and later column by column. Use proc.time to see if there is any difference. Is the measurement reliable?
+
+```{r}
+
+N <- 10e3 * 10e3
+
+# By row
+t1 <- proc.time()
+M <- matrix(sample(1:42, size = N, replace = T), nrow = sqrt(N), byrow = T)
+t2 <- proc.time()
+(t2 - t1)
+
+# By column
+t1 <- proc.time()
+M <- matrix(sample(1:42, size = N, replace = T), nrow = sqrt(N), byrow = F)
+t2 <- proc.time()
+(t2 - t1)
+
+```
+
+### 2.2 Task: Timing reliability
+
+In the lecture slides, you have seen how to time sampling from Normal Gaussian distribution:
+
+```{r}
+
+system.time(rnorm(n = 10e6))
+
+```
+
+Is a single measurement reliable? Run the code 100 times, plot and record the mean and the variance of the elapsed time. Put these values (elapsed.time mean and variance) into this spreadsheet (Best Coding Practises Lab sheet).
+
+```{r}
+
+res <- numeric(100)
+
+for (i in 1:100) {
+  res[i] <- system.time(rnorm(n = 10e6))[3]
+}
+
+```
+
+```{r}
+
+boxplot(res)
+mean(res)
+var(res)
+
+```
+
+```{r}
+
+# Using replicate to run the code 100 times
+st2 <- replicate(n = 100, system.time(rnorm(n = 10e6)))[3,]
+
+```
+
+```{r}
+
+mean(st2)
+var(st2)
+
+```
+
+
+### 2.3 Task: Microbenchmarking
+
+While system.time might be sufficient most of the time, there is also an excellent package microbenchmark that enables more accurate time profiling, aiming at microsecond resolution that most of modern operating systems offer. Most of the benchmarking the microbenchmark does is implemented in low-overhead C functions and also the package makes sure to:
+
+-   estimate granularity and resolution of timing for your particular OS
+-   warm up your processor before measuring, i.e. wake the processor up from any idle state or likewise.
+
+
+#### 2.3.1 Checking system time
+
+```{r}
+
+library(microbenchmark)
+get_nanotime()
+
+```
+
+Modify the code below so that it uses the current value of platform’s timer:
+
+```{r}
+
+timing <- double(100)
+for (i in 1:100) {
+  t1 <- get_nanotime()
+  st <- rnorm(n = 10e6)
+  t2 <- get_nanotime()
+  timing[i] <- t2 - t1
+}
+boxplot(timing)
+mean(timing)
+var(timing)
+
+```
+
+#### 2.3.2 Microtiming precision
+
+There is an experimental function in the microbenchmark package that helps the package estimate granularity and resolution of your particular timing subsystem. According to the documentation, the function measures the overhead of timing a C function call rounds times and returns all non-zero timings observed.
+
+Run the microtiming_precision function and put the mean and the variance of the resulting vector into this spreadsheet (Best Coding Practises Lab sheet, Microbenchmark – precision)
+
+```{r}
+
+precision <- microbenchmark::microtiming_precision()
+mean(precision)
+var(precision)
+
+```
+
+Run the function one time without assigning its value to a variable and consult the documentation. Compare the output of running the function without assigning the value to a variable, the values stored in the variable by the function upon assignment and the value specified in the documentation.
+
+```{r}
+
+# In version 1.4-4 of the package, all three ways give different results!
+microbenchmark::microtiming_precision()
+precision <- microbenchmark::microtiming_precision()
+precision
+?microbenchmark::microtiming_precision
+
+```
+
+### The microbenchmark way
+
+Finally, let’s benchmark our rnorm example using microbenchmark:
+
+- microbenchmark the rnorm(n = 10e6) expression,
+- plot the results using both ggplot2 and a boxplot (read the microbenchmark package documentation),
+- look at the summary of the benchmark,
+- how long does it take to dispatch a simple function that does nothing compared to evaluating a constant and adding two integers?
+
+```{r}
+
+# Microbenchmark rnorm
+mb <- microbenchmark(rnorm(n = 10e6))
+
+# Plot using ggplot2
+library(ggplot2)
+autoplot(mb)
+
+# Plot boxplot
+ggplot(data.frame(time = mb$time), aes(x = 'Time', y = time*10^-6)) +
+  geom_boxplot(width = 0.5) +
+  labs(y = 'Time [milliseconds]', x = '')
+
+```
+```{r}
+
+summary(mb)
+
+```
+
+
+```{r}
+
+# Microbenchmark a simple function
+f <- function() {}
+mb2 <- microbenchmark(f(), pi, 2+2)
+summary(mb2)
+autoplot(mb2)
+
+```
+
+### 2.4 More advanced profiling
+
+#### 2.4.1 The Rprof way
+
+### 2.5 Optimization
+
+### 2.6 Using the profr package
+
+### 2.7 Using the profvis package
+
+## 3 Optimize your code
+
+

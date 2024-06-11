@@ -1,0 +1,102 @@
+---
+title: "Computer lab 2"
+subtitle: "Literate programming with Quarto"
+description: "This is a lab on literate programming with Quarto."
+author: "Noora Sissala"
+date: "10-06-2024"
+format: html
+  html: 
+    title-block-banner: true
+    smooth-scroll: true
+    toc: true
+    toc-depth: 4
+    toc-location: right
+    number-sections: true
+    number.depth: 4
+    code-fold: true
+    code-tools: true
+    code-copy: true
+    code-overflow: wrap
+    df-print: kable
+    standalone: false
+    fig-align: center
+---
+
+## 1 Introduction
+
+Create a quarto document by creating a text file with **.qmd** extension. In RStudio, go to **File \> New File \> Quarto Document**. You are given the option to set title, author etc as well as output format. Set the output format as **html**. This document that you are working in is a quarto notebook or R notebook. You can set the display mode to be **Source** or **Visual** (where text formatting is shown).
+
+A quarto file usually consists of a YAML header, text in markdown format and if needed some code in code chunks. All of these are optional. An empty qmd file is a valid quarto file which will render to produce a blank html document.
+
+### 1.1 YAML
+
+The content on the top of the quarto document within three dashes is the YAML matter. This is optional. It is really up to the author to decide how much information needs to be entered here.
+
+title-block-banner: true displays the blue banner code-fold: true folds the code and reduces clutter code-copy: true adds a copy icon in the code chunk and allows the code to be copied easily code-tools: true adds options to the top right of the document to allow the user to show/hide all code chunks and view source code df-print: kable sets the default method of displaying tables standalone: false specifies if all assets and libraries must be integrated into the output html file as a standalone document. Standalone document may not always work with complex html files such as those with interactive graphics.
+
+### 1.2 Markdown text
+
+Markdown is a markup language similar to HTML, but simple and human-readable. There exists several variants of markdown with slight differences. Quarto uses Pandoc flavored markdown.
+
+This \*italic text\* becomes *italic text*. This \*\*bold text\*\* becomes **bold text**.
+
+Subscript: H\~2\~O renders as H~2~O. Superscript: 2\^10\^ renders as 2^10^.
+
+Block quotes can be specified using \>.
+
+> This is a block quote. This paragraph has two lines.
+
+Lists can also be created inside block quotes.
+
+> 1.  This is a list inside a block quote.
+> 2.  Second item.
+
+Links can be created using \[this\](https://quarto.org) which renders like [this](https://quarto.org)
+
+### 1.3 Images
+
+Images can be displayed from a relative local location or a full URL using \![This is a caption\](assets/gotland.jpg). For example:
+
+![This is a caption](assets/gotland.jpg)
+
+The image size can be adjusted:
+
+\![This is a caption\](assets/gotland.jpg){width=40%}
+
+![This is a caption](assets/gotland.jpg){width=40%}
+
+For finer control, raw HTML can be used. For example;
+
+<img src="assets/gotland.jpg" width="150px">
+
+This would work only if the output format is html.
+
+
+Images can also be displayed using R code. Chunks option out.width in RMarkdown can be used to control image display size.
+
+This image is displayed at a size of 200 pixels.
+
+```{r}
+#| out-width: "200px"
+knitr::include_graphics("assets/gotland.jpg")
+```
+
+
+This image is displayed at a size of 75 pixels.
+
+```{r}
+#| out-width: "75px"
+knitr::include_graphics("assets/gotland.jpg")
+```
+
+### 1.4 Code
+
+```{r}
+
+# Code block
+
+```
+
+`Inline code`
+
+
