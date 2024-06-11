@@ -1,0 +1,99 @@
+---
+title: "Plotting with ggplot2"
+author: "Noora Sissala"
+format: html
+---
+
+## Task: Economist scatterplot
+
+The aim of this challenge is to recreate the plot below originally published in The Economist. The graph is a scatterplot showing the relationship between Corruption Index and Human Development Index for various countries.
+
+![Plot from The Economist](https://www.economist.com/img/b/1280/720/90/sites/default/files/imagecache/original-size/20111210_WOC210.gif)
+
+Load packages:
+
+```{r}
+#| message: FALSE
+
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+library(patchwork)
+
+```
+
+Load data:
+
+```{r}
+
+ec <- read.csv("data/data_economist.csv",header = T, row.names = 1)
+head(ec)
+
+```
+
+Make sure that the fields are of the correct type. The x-axis field ‘CPI’ and the y-axis field ‘HDI’ must be of numeric type. The categorical field ‘Region’ must be of Factor type.
+
+```{r}
+
+str(ec)
+
+```
+
+We need to first modify the region column. The current values in the ‘Region’ field are:
+
+```{r}
+
+unique(ec$Region)
+
+```
+
+But, the categories on the plot are different and need to be changed as follows:
+
+* EU W. Europe --> OECD
+* Americas --> Americas
+* Asia Pacific --> Asia & Oceania
+* East EU Cemt Asia --> Central & Eastern Europe
+* MENA --> Middle East & North Africa
+* SSA --> Sub-Saharan Africa
+
+Don't forget about the line breaks like in the original plot.
+
+```{r}
+
+ec$Region <- factor(ec$Region,levels = c("EU W. Europe",
+                                "Americas",
+                                "Asia Pacific",
+                                "East EU Cemt Asia",
+                                "MENA",
+                                "SSA"),
+                     labels = c("OECD",
+                                "Americas",
+                                "Asia &\nOceania",
+                                "Central &\nEastern Europe",
+                                "Middle East &\nNorth Africa",
+                                "Sub-Saharan\nAfrica"))
+
+
+```
+
+```{r}
+
+levels(ec$Region)
+
+```
+
+```{r}
+
+ggplot(ec, aes(x = CPI, y = HDI)) +
+  geom_point(aes(color = Region), shape = 21, stroke = 1) +
+  labs(x = 'Corruption Perceptions Index, 2011 (10=Least corrupt)',
+       y = 'Human Development Index, 2011 (1=best)',
+       title = 'Corruption and human development') +
+  scale_color_manual(values = c("#23576E","#099FDB","#29B00E", "#208F84","#F55840","#924F3E")) +
+  geom_smooth(method = 'lm', formula = y ~ log(x),
+              color = 'red', se = F) +
+  theme_minimal()
+  
+
+```
+
